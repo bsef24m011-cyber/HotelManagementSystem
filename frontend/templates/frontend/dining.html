@@ -1,0 +1,113 @@
+{% extends 'frontend/layouts/base.html' %}
+{% block title %}Dining - Luxuria{% endblock %}
+{% block page_title %}In-Room Dining{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+    <!-- Menu -->
+    <div id="menuGrid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; align-content: start;">
+        <div class="loader"></div>
+    </div>
+
+    <!-- Active Orders -->
+    <div class="card" style="height: fit-content;">
+        <h3 style="margin-bottom: 20px;">Your Orders</h3>
+        <div id="ordersList">
+            <p class="text-muted">Loading...</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    async function loadDining() {
+        const menuGrid = document.getElementById('menuGrid');
+        const ordersList = document.getElementById('ordersList');
+
+        // 1. Load Menu
+        try {
+            const res = await fetch('/api/food/items/', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const items = await res.json();
+                menuGrid.innerHTML = '';
+                items.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = 'card fade-in';
+                    card.innerHTML = `
+                        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                            <h4 style="font-size:1.1rem;">${item.name}</h4>
+                            <span style="color:var(--primary); font-weight:bold;">$${item.price}</span>
+                        </div>
+                        <p class="text-muted" style="font-size:0.9rem; margin-bottom:15px;">${item.description || 'Delicious meal prepared by our chef.'}</p>
+                        <button class="btn btn-outline" style="width:100%;" onclick="orderFood(${item.id})">Order</button>
+                    `;
+                    menuGrid.appendChild(card);
+                });
+            }
+        } catch (e) { console.error(e); }
+
+        // 2. Load Orders
+        try {
+            const res = await fetch('/api/food/orders/', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const orders = await res.json();
+                ordersList.innerHTML = '';
+                if (orders.length === 0) ordersList.innerHTML = '<p class="text-muted">No active orders.</p>';
+
+                orders.forEach(o => {
+                    const div = document.createElement('div');
+                    div.style.marginBottom = '15px';
+                    div.style.paddingBottom = '15px';
+                    div.style.borderBottom = '1px solid rgba(255,255,255,0.1)';
+                    div.innerHTML = `
+                        <div style="display:flex; justify-content:space-between;">
+                            <span>Order #${o.id}</span>
+                            <span class="text-muted">${o.status}</span>
+                        </div>
+                        <div style="font-size:0.8rem; color:var(--text-muted); margin-top:5px;">
+                            Total: $${o.total_price}
+                        </div>
+                    `;
+                    ordersList.appendChild(div);
+                });
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    async function orderFood(itemId) {
+        // Ideally select booking first. For now, try to find an active booking automatically or prompt.
+        // Simplified: User must enter Booking ID (since we don't have global state for active booking ID in this simple frontend)
+        const bookingId = prompt("Please enter your Booking ID to deliver to:");
+        if (!bookingId) return;
+
+        try {
+            const res = await fetch('/api/food/orders/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    booking: bookingId,
+                    items: [{ food_item: itemId, quantity: 1 }]
+                })
+            });
+
+            if (res.ok) {
+                alert("Order Placed!");
+                loadDining();
+            } else {
+                const err = await res.json();
+                alert("Failed: " + JSON.stringify(err));
+            }
+        } catch (e) { alert("Error connecting"); }
+    }
+
+    loadDining();
+</script>
+{% endblock %}

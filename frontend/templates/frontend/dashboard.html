@@ -1,0 +1,176 @@
+{% extends 'frontend/layouts/base.html' %}
+{% block title %}Dashboard - Luxuria{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="dashboard-grid">
+    <!-- Stats Cards -->
+    <div class="card stat-card glass-card" style="grid-column: span 1;">
+        <div class="stat-icon"><i class="ri-calendar-check-fill"></i></div>
+        <div class="stat-info">
+            <h3 id="activeBookings">0</h3>
+            <span>Active Bookings</span>
+        </div>
+    </div>
+
+    <div class="card stat-card glass-card" style="grid-column: span 1;">
+        <div class="stat-icon"><i class="ri-hotel-bed-fill"></i></div>
+        <div class="stat-info">
+            <h3 id="roomTypes">0</h3>
+            <span>Room Types</span>
+        </div>
+    </div>
+
+    <div class="card stat-card glass-card" style="grid-column: span 1;">
+        <div class="stat-icon"><i class="ri-bill-fill"></i></div>
+        <div class="stat-info">
+            <h3 id="unpaidInvoices">0</h3>
+            <span>Unpaid Bills</span>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="card glass-panel" style="grid-column: span 3; margin-top: 20px;">
+        <h3>Quick Actions</h3>
+        <div class="actions-container customer-only" style="display: none; gap: 16px; margin-top: 16px;">
+            <a href="/rooms/" class="btn btn-primary"><i class="ri-add-line"></i> Book a Room</a>
+            <a href="/food/" class="btn btn-outline"><i class="ri-restaurant-2-line"></i> Order Food</a>
+        </div>
+        <div class="actions-container admin-only" style="display: none; gap: 16px; margin-top: 16px;">
+            <a href="/admin/rooms/room/add/" class="btn btn-primary" target="_blank"><i class="ri-add-circle-line"></i>
+                Add New Room</a>
+            <a href="/admin/food/fooditem/" class="btn btn-outline" target="_blank"><i class="ri-restaurant-fill"></i>
+                Update Menu</a>
+        </div>
+    </div>
+
+    <!-- Recent Activity Section -->
+    <div class="card glass-panel" style="grid-column: span 3; margin-top: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3>Recent Bookings</h3>
+            <a href="/bookings/" class="text-muted" style="font-size: 0.9rem;">View All <i
+                    class="ri-arrow-right-line"></i></a>
+        </div>
+        <table class="custom-table" id="recentBookingsTable">
+            <thead>
+                <tr>
+                    <th>Guest</th>
+                    <th>Room</th>
+                    <th>Check-in</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Loaded via JS -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+    }
+
+    .stat-card {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        background: rgba(212, 175, 55, 0.2);
+        color: var(--primary);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+
+    .stat-info h3 {
+        font-size: 1.8rem;
+        margin-bottom: 4px;
+    }
+
+    .stat-info span {
+        color: var(--text-muted);
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    async function loadDashboardStats() {
+        if (!token) return;
+
+        try {
+            // Fetch Bookings
+            const bookingsRes = await fetch('/api/bookings/', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (bookingsRes.ok) {
+                const bookings = await bookingsRes.json();
+                document.getElementById('activeBookings').innerText = bookings.length;
+
+                // Populate Recent Activity Table
+                const tableBody = document.querySelector('#recentBookingsTable tbody');
+                tableBody.innerHTML = '';
+                bookings.slice(0, 5).forEach(b => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${b.user_username || 'Guest'}</td>
+                        <td>Room ${b.room_number || 'N/A'}</td>
+                        <td>${b.check_in_date}</td>
+                        <td><span class="badge ${b.status.toLowerCase()}">${b.status}</span></td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            }
+
+            // Fetch Rooms
+            const roomsRes = await fetch('/api/rooms/types/', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (roomsRes.ok) {
+                const rooms = await roomsRes.json();
+                document.getElementById('roomTypes').innerText = rooms.length;
+            }
+
+            // Fetch Invoices
+            const billsRes = await fetch('/api/billing/invoices/', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (billsRes.ok) {
+                const bills = await billsRes.json();
+                const unpaid = bills.filter(b => b.status === 'UNPAID').length;
+                document.getElementById('unpaidInvoices').innerText = unpaid;
+            }
+
+            // Differentiate Labels based on Role
+            if (window.userRole === 'ADMIN') {
+                document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'flex');
+                document.querySelectorAll('.stat-info span').forEach(span => {
+                    if (span.innerText.includes('Active Bookings')) span.innerText = 'Total Hotel Bookings';
+                    if (span.innerText.includes('Unpaid Bills')) span.innerText = 'Total Unpaid Revenue';
+                });
+            } else {
+                document.querySelectorAll('.customer-only').forEach(el => el.style.display = 'flex');
+                document.querySelectorAll('.stat-info span').forEach(span => {
+                    if (span.innerText.includes('Active Bookings')) span.innerText = 'My Active Bookings';
+                    if (span.innerText.includes('Unpaid Bills')) span.innerText = 'My Unpaid Bills';
+                });
+            }
+
+        } catch (e) {
+            console.error("Failed to load dashboard data", e);
+        }
+    }
+
+    loadDashboardStats();
+</script>
+{% endblock %}

@@ -1,0 +1,151 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Hotel Management{% endblock %}</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <!-- Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="{% static 'frontend/css/styles.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="brand">
+                <i class="ri-hotel-line"></i>
+                <span>LUXURIA</span>
+            </div>
+
+            <nav class="nav-menu">
+                <!-- Shared -->
+                <a href="/dashboard/" class="nav-link {% if request.path == '/dashboard/' %}active{% endif %}">
+                    <i class="ri-dashboard-line"></i> <span>Dashboard</span>
+                </a>
+
+                <!-- Customer Only -->
+                <a href="/rooms/" class="nav-link customer-only {% if request.path == '/rooms/' %}active{% endif %}"
+                    style="display: none;">
+                    <i class="ri-hotel-bed-line"></i> <span>Book a Room</span>
+                </a>
+                <a href="/bookings/"
+                    class="nav-link customer-only {% if request.path == '/bookings/' %}active{% endif %}"
+                    style="display: none;">
+                    <i class="ri-calendar-check-line"></i> <span>My Reservations</span>
+                </a>
+                <a href="/food/" class="nav-link customer-only {% if request.path == '/food/' %}active{% endif %}"
+                    style="display: none;">
+                    <i class="ri-restaurant-line"></i> <span>In-Room Dining</span>
+                </a>
+
+                <!-- Admin Only -->
+                <a href="/admin/rooms/room/"
+                    class="nav-link admin-only {% if 'rooms' in request.path %}active{% endif %}" style="display: none;"
+                    target="_blank">
+                    <i class="ri-door-open-line"></i> <span>Manage Inventory</span>
+                </a>
+                <a href="/admin/bookings/booking/"
+                    class="nav-link admin-only {% if 'bookings' in request.path %}active{% endif %}"
+                    style="display: none;" target="_blank">
+                    <i class="ri-group-line"></i> <span>All Guests</span>
+                </a>
+                <a href="/admin/billing/invoice/" class="nav-link admin-only" style="display: none;" target="_blank">
+                    <i class="ri-money-dollar-circle-line"></i> <span>Finance Reports</span>
+                </a>
+                <a href="/admin/" class="nav-link admin-only" style="display: none;" target="_blank">
+                    <i class="ri-settings-5-line"></i> <span>System Settings</span>
+                </a>
+                <div style="margin-top: auto;"></div>
+                <a href="#" class="nav-link" id="logoutBtn">
+                    <i class="ri-logout-box-line"></i> <span>Logout</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="header">
+                <h1 class="page-title">{% block page_title %}{% endblock %}</h1>
+                <div class="user-profile">
+                    <span id="userName" style="font-weight: 600;">Loading...</span>
+                </div>
+            </header>
+
+            <div class="content-area fade-in">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+
+    <!-- Base Scripts -->
+    <script>
+        // Auth Logic
+        const token = localStorage.getItem('access_token');
+        const publicPaths = ['/login/', '/register/'];
+
+        if (!token && !publicPaths.includes(window.location.pathname)) {
+            window.location.href = '/login/';
+        }
+
+        // Logout
+        document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            window.location.href = '/login/';
+        });
+
+        // Fetch User Profile (if logged in)
+        async function fetchProfile() {
+            if (!token) return;
+            try {
+                const res = await fetch('/api/users/profile/', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    const nameEl = document.getElementById('userName');
+                    if (nameEl) {
+                        nameEl.innerHTML = `
+                            ${data.username} 
+                            <span class="badge ${data.role.toLowerCase()}-badge" style="margin-left: 8px; font-size: 0.7rem; vertical-align: middle;">
+                                ${data.role}
+                            </span>
+                        `;
+                    }
+
+                    // Store role for other pages to use
+                    window.userRole = data.role;
+
+                    // Show/Hide based on role
+                    if (data.role === 'ADMIN') {
+                        document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'flex');
+                        document.querySelectorAll('.customer-only').forEach(el => el.style.display = 'none');
+                    } else {
+                        document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+                        document.querySelectorAll('.customer-only').forEach(el => el.style.display = 'flex');
+                    }
+                }
+            } catch (e) {
+                console.error("Auth Error", e);
+            }
+        }
+
+        if (token) fetchProfile();
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+
+</html>

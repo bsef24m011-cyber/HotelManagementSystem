@@ -1,0 +1,128 @@
+{% extends 'frontend/layouts/base.html' %}
+{% block title %}Rooms - Luxuria{% endblock %}
+{% block page_title %}Our Suites{% endblock %}
+
+{% block content %}
+<div class="actions-bar" style="margin-bottom: 30px; display: flex; justify-content: flex-end;">
+    <!-- Admin Only: Add Room Button could go here -->
+</div>
+
+<div id="roomsGrid" class="rooms-grid">
+    <!-- Loaded via JS -->
+    <div class="loader"></div>
+</div>
+
+<style>
+    .rooms-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 24px;
+    }
+
+    .room-card {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        height: 100%;
+    }
+
+    .room-price {
+        font-size: 1.5rem;
+        color: var(--primary);
+        font-weight: 700;
+        margin: 10px 0;
+    }
+
+    .room-meta {
+        display: flex;
+        gap: 15px;
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        margin-bottom: 20px;
+    }
+
+    .room-meta i {
+        color: var(--primary);
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    async function loadRooms() {
+        const grid = document.getElementById('roomsGrid');
+        try {
+            const res = await fetch('/api/rooms/', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (res.ok) {
+                const rooms = await res.json();
+                grid.innerHTML = '';
+
+                if (rooms.length === 0) {
+                    grid.innerHTML = '<p class="text-muted">No rooms available at the moment.</p>';
+                    return;
+                }
+
+                rooms.forEach(room => {
+                    const card = document.createElement('div');
+                    card.className = 'card room-card fade-in';
+                    card.innerHTML = `
+                        <h3>Room ${room.number}</h3>
+                        <div class="room-price">$${room.price} <span style="font-size:0.9rem; color:var(--text-muted)">/ night</span></div>
+                        <div class="room-meta">
+                            <span><i class="ri-community-line"></i> ${room.room_type_name}</span>
+                            <span><i class="ri-user-line"></i> Capacity: ${room.capacity}</span>
+                        </div>
+                        <div class="status-badge" style="margin-bottom: 15px;">
+                            <span style="color: ${room.status === 'AVAILABLE' ? 'var(--success)' : 'var(--danger)'}">
+                                <i class="ri-checkbox-circle-fill"></i> ${room.status}
+                            </span>
+                        </div>
+                        <button class="btn btn-outline" onclick="bookRoom(${room.id})" ${room.status !== 'AVAILABLE' ? 'disabled' : ''}>
+                            Book Now
+                        </button>
+                    `;
+                    grid.appendChild(card);
+                });
+            }
+        } catch (e) {
+            console.error(e);
+            grid.innerHTML = '<p class="text-danger">Failed to load rooms.</p>';
+        }
+    }
+
+    function bookRoom(roomId) {
+        // Simple prompt for dates (Ideally this would be a modal)
+        const checkIn = prompt("Enter Check-in Date (YYYY-MM-DD):", new Date().toISOString().split('T')[0]);
+        if (!checkIn) return;
+
+        const checkOut = prompt("Enter Check-out Date (YYYY-MM-DD):", new Date(Date.now() + 86400000).toISOString().split('T')[0]);
+        if (!checkOut) return;
+
+        fetch('/api/bookings/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                room: roomId,
+                check_in_date: checkIn,
+                check_out_date: checkOut
+            })
+        }).then(async res => {
+            if (res.ok) {
+                alert("Room Booked Successfully! View in 'Bookings'.");
+                loadRooms(); // Refresh
+            } else {
+                const err = await res.json();
+                alert("Error: " + JSON.stringify(err));
+            }
+        });
+    }
+
+    loadRooms();
+</script>
+{% endblock %}

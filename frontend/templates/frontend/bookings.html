@@ -1,0 +1,88 @@
+{% extends 'frontend/layouts/base.html' %}
+{% block title %}My Bookings - Luxuria{% endblock %}
+{% block page_title %}My Reservations{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div id="bookingsList">
+        <div class="loader"></div>
+    </div>
+</div>
+
+<style>
+    .booking-item {
+        padding: 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .booking-item:last-child {
+        border-bottom: none;
+    }
+
+    .booking-dates {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+
+    .status-confirmed {
+        color: var(--success);
+    }
+
+    .status-pending {
+        color: var(--primary);
+    }
+
+    .status-cancelled {
+        color: var(--danger);
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    async function loadBookings() {
+        const list = document.getElementById('bookingsList');
+        try {
+            const res = await fetch('/api/bookings/', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (res.ok) {
+                const bookings = await res.json();
+                list.innerHTML = '';
+
+                if (bookings.length === 0) {
+                    list.innerHTML = '<p class="text-muted" style="padding: 20px;">You have no bookings yet.</p>';
+                    return;
+                }
+
+                bookings.forEach(b => {
+                    const div = document.createElement('div');
+                    div.className = 'booking-item fade-in';
+                    div.innerHTML = `
+                        <div>
+                            <div class="booking-dates">
+                                ${b.check_in_date} &rarr; ${b.check_out_date}
+                            </div>
+                            <div class="text-muted">
+                                Room ${b.room_number || 'N/A'} • Booking #${b.id}
+                            </div>
+                        </div>
+                        <div class="booking-status status-${b.status.toLowerCase()}">
+                            ${b.status}
+                        </div>
+                    `;
+                    list.appendChild(div);
+                });
+            }
+        } catch (e) {
+            list.innerHTML = '<p class="text-danger">Failed to load bookings.</p>';
+        }
+    }
+    loadBookings();
+</script>
+{% endblock %}
