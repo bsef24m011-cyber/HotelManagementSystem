@@ -12,7 +12,53 @@
     <div class="loader"></div>
 </div>
 
+<!-- Booking Modal -->
+<div id="bookingModal" class="modal">
+    <div class="modal-content glass-panel fade-in">
+        <h2 id="modalRoomTitle">Book Room</h2>
+        <p class="text-muted" style="margin-bottom: 20px;">Please select your check-in and check-out dates.</p>
+
+        <form id="modalBookingForm">
+            <input type="hidden" id="modalRoomId">
+            <div class="form-group">
+                <label class="form-label">Check-in Date</label>
+                <input type="date" id="modalCheckIn" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Check-out Date</label>
+                <input type="date" id="modalCheckOut" class="form-control" required>
+            </div>
+            <div style="display: flex; gap: 12px; margin-top: 30px;">
+                <button type="button" class="btn btn-outline" style="flex: 1;" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary" style="flex: 1;">Confirm Booking</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <style>
+    /* Modal Styling */
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(8px);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-content {
+        width: 100%;
+        max-width: 450px;
+        padding: 40px;
+        text-align: center;
+    }
+
     .rooms-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -80,7 +126,7 @@
                                 <i class="ri-checkbox-circle-fill"></i> ${room.status}
                             </span>
                         </div>
-                        <button class="btn btn-outline" onclick="bookRoom(${room.id})" ${room.status !== 'AVAILABLE' ? 'disabled' : ''}>
+                        <button class="btn btn-outline" onclick="bookRoom(${room.id}, '${room.number}')" ${room.status !== 'AVAILABLE' ? 'disabled' : ''}>
                             Book Now
                         </button>
                     `;
@@ -93,35 +139,64 @@
         }
     }
 
-    function bookRoom(roomId) {
-        // Simple prompt for dates (Ideally this would be a modal)
-        const checkIn = prompt("Enter Check-in Date (YYYY-MM-DD):", new Date().toISOString().split('T')[0]);
-        if (!checkIn) return;
+    function bookRoom(roomId, roomNumber) {
+        document.getElementById('modalRoomId').value = roomId;
+        document.getElementById('modalRoomTitle').innerText = "Book Room " + (roomNumber || roomId);
 
-        const checkOut = prompt("Enter Check-out Date (YYYY-MM-DD):", new Date(Date.now() + 86400000).toISOString().split('T')[0]);
-        if (!checkOut) return;
+        // Set default dates
+        const today = new Date().toISOString().split('T')[0];
+        const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+        document.getElementById('modalCheckIn').value = today;
+        document.getElementById('modalCheckOut').value = tomorrow;
 
-        fetch('/api/bookings/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                room: roomId,
-                check_in_date: checkIn,
-                check_out_date: checkOut
-            })
-        }).then(async res => {
+        document.getElementById('bookingModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+        document.getElementById('bookingModal').style.display = 'none';
+    }
+
+    // Modal Form Logic
+    document.getElementById('modalBookingForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const roomId = document.getElementById('modalRoomId').value;
+        const checkIn = document.getElementById('modalCheckIn').value;
+        const checkOut = document.getElementById('modalCheckOut').value;
+        const btn = e.target.querySelector('.btn-primary');
+
+        btn.innerHTML = '<div class="loader"></div>';
+        btn.disabled = true;
+
+        try {
+            const res = await fetch('/api/bookings/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    room: roomId,
+                    check_in_date: checkIn,
+                    check_out_date: checkOut
+                })
+            });
+
             if (res.ok) {
-                alert("Room Booked Successfully! View in 'Bookings'.");
-                loadRooms(); // Refresh
+                alert("Room Booked Successfully! View in 'My Reservations'.");
+                closeModal();
+                loadRooms();
             } else {
                 const err = await res.json();
                 alert("Error: " + JSON.stringify(err));
             }
-        });
-    }
+        } catch (err) {
+            console.error(err);
+            alert("Connection Error");
+        } finally {
+            btn.innerText = 'Confirm Booking';
+            btn.disabled = false;
+        }
+    });
 
     loadRooms();
 </script>
