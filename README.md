@@ -1,45 +1,33 @@
-# Hotel Management System Backend
+# Luxuria Hotel Management System
 
-## Overview
-A complete, production-ready backend for a Hotel Management System using Django and Django REST Framework.
-Features module-based architecture, JWT authentication, and comprehensive management for users, rooms, bookings, food, events, billing, and payroll.
+A premium Hotel Management System built with Django and Vanilla JavaScript.
 
-## Requirements
-- Python 3.8+
-- MySQL (or SQLite for dev)
+## Features
+- **User Roles**: Admin, Staff, and Customer panels.
+- **Room Management**: Dynamic booking and inventory.
+- **Dining**: Integrated food ordering system.
+- **Billing**: Automated invoice generation and payment tracking.
+- **Security**: JWT Authentication and production-ready settings.
 
-## Setup Instructions
-1. **Clone the repository** (if applicable)
-2. **Install Dependencies**:
+## Repository Structure
+- `main`: The stable, production-ready code combining backend and frontend.
+- `backend`: Focuses on the Django REST API, Models, and business logic.
+- `frontend`: Focuses on Django Templates, Static CSS/JS, and UI components.
+
+## Local Setup
+1. Clone the repository.
+2. Install dependencies: `pip install django djangorestframework djangorestframework-simplejwt django-cors-headers python-dotenv waitress whitenoise`.
+3. Create a `.env` file (see `.env.example`).
+4. Run migrations: `python manage.py migrate`.
+5. Start server: `python run_prod.py`.
+
+## Pushing to GitHub
+To push this project to your GitHub:
+1. Create a new repository on GitHub.
+2. Run the following commands:
    ```bash
-   pip install django djangorestframework djangorestframework-simplejwt mysqlclient
+   git remote add origin YOUR_GITHUB_REPO_URL
+   git push -u origin main
+   git push origin backend
+   git push origin frontend
    ```
-3. **Database Setup**:
-   - Ensure MySQL is running and create a database named `hms_db`.
-   - Update `hms_project/settings.py` `DATABASES` configuration if needed.
-4. **Run Migrations**:
-   ```bash
-   python manage.py makemigrations
-   python manage.py migrate
-   ```
-5. **Create Superuser**:
-   ```bash
-   python manage.py createsuperuser
-   ```
-6. **Run Server**:
-   ```bash
-   python manage.py runserver
-   ```
-
-## Modules & Endpoints
-- **Users**: `/api/users/` (Register, Login, Profile)
-- **Rooms**: `/api/rooms/` (CRUD Rooms, Room Types)
-- **Bookings**: `/api/bookings/` (Book rooms, check availability)
-- **Food**: `/api/food/` (Menu, Orders)
-- **Events**: `/api/events/` (Event booking)
-- **Billing**: `/api/billing/` (Invoices, Payments, Revenue)
-- **Payroll**: `/api/payroll/` (Staff Salaries)
-
-## Authentication
-Use the `/api/users/login/` endpoint to obtain a JWT pair (access/refresh).
-Include the access token in the `Authorization` header: `Bearer <token>` for protected endpoints.
