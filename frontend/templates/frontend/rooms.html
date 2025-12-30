@@ -143,11 +143,17 @@
         document.getElementById('modalRoomId').value = roomId;
         document.getElementById('modalRoomTitle').innerText = "Book Room " + (roomNumber || roomId);
 
-        // Set default dates
+        // Set default dates and min values to prevent past date errors
         const today = new Date().toISOString().split('T')[0];
         const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
-        document.getElementById('modalCheckIn').value = today;
-        document.getElementById('modalCheckOut').value = tomorrow;
+
+        const checkInInput = document.getElementById('modalCheckIn');
+        const checkOutInput = document.getElementById('modalCheckOut');
+
+        checkInInput.value = today;
+        checkInInput.min = today;
+        checkOutInput.value = tomorrow;
+        checkOutInput.min = tomorrow;
 
         document.getElementById('bookingModal').style.display = 'flex';
     }
