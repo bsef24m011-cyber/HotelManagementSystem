@@ -49,22 +49,29 @@
                     style="display: none;">
                     <i class="ri-restaurant-line"></i> <span>In-Room Dining</span>
                 </a>
-                <a href="/billing/" class="nav-link customer-only {% if request.path == '/billing/' %}active{% endif %}"
-                    style="display: none;">
+                <a href="/billing/"
+                    class="nav-link customer-only {% if request.path == '/billing/' %}active{% endif %}">
                     <i class="ri-bill-line"></i> <span>My Bills</span>
                 </a>
 
-                <!-- Admin Only -->
+                <!-- Manager Access (Admin & Staff) -->
                 <a href="/admin/rooms/room/"
-                    class="nav-link admin-only {% if 'rooms' in request.path %}active{% endif %}" style="display: none;"
-                    target="_blank">
-                    <i class="ri-door-open-line"></i> <span>Manage Inventory</span>
+                    class="nav-link manager-access {% if 'rooms' in request.path %}active{% endif %}"
+                    style="display: none;" target="_blank">
+                    <i class="ri-door-open-line"></i> <span>Hotel Inventory</span>
                 </a>
                 <a href="/admin/bookings/booking/"
-                    class="nav-link admin-only {% if 'bookings' in request.path %}active{% endif %}"
+                    class="nav-link manager-access {% if 'bookings' in request.path %}active{% endif %}"
                     style="display: none;" target="_blank">
-                    <i class="ri-group-line"></i> <span>All Guests</span>
+                    <i class="ri-group-line"></i> <span>Guest Management</span>
                 </a>
+                <a href="/admin/food/fooditem/"
+                    class="nav-link manager-access {% if 'food' in request.path %}active{% endif %}"
+                    style="display: none;" target="_blank">
+                    <i class="ri-restaurant-fill"></i> <span>Restaurant Hub</span>
+                </a>
+
+                <!-- Admin Only -->
                 <a href="/admin/billing/invoice/" class="nav-link admin-only" style="display: none;" target="_blank">
                     <i class="ri-money-dollar-circle-line"></i> <span>Finance Reports</span>
                 </a>
@@ -134,11 +141,16 @@
                     window.userRole = data.role;
 
                     // Show/Hide based on role
+                    document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+                    document.querySelectorAll('.manager-access').forEach(el => el.style.display = 'none');
+                    document.querySelectorAll('.customer-only').forEach(el => el.style.display = 'none');
+
                     if (data.role === 'ADMIN') {
                         document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'flex');
-                        document.querySelectorAll('.customer-only').forEach(el => el.style.display = 'none');
+                        document.querySelectorAll('.manager-access').forEach(el => el.style.display = 'flex');
+                    } else if (data.role === 'STAFF') {
+                        document.querySelectorAll('.manager-access').forEach(el => el.style.display = 'flex');
                     } else {
-                        document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
                         document.querySelectorAll('.customer-only').forEach(el => el.style.display = 'flex');
                     }
                 }
