@@ -49,6 +49,10 @@
                     style="display: none;">
                     <i class="ri-restaurant-line"></i> <span>In-Room Dining</span>
                 </a>
+                <a href="/billing/" class="nav-link customer-only {% if request.path == '/billing/' %}active{% endif %}"
+                    style="display: none;">
+                    <i class="ri-bill-line"></i> <span>My Bills</span>
+                </a>
 
                 <!-- Admin Only -->
                 <a href="/admin/rooms/room/"

@@ -4,7 +4,7 @@ from .views import InvoiceViewSet, PaymentViewSet, RevenueView
 
 router = DefaultRouter()
 router.register(r'invoices', InvoiceViewSet, basename='invoice')
-router.register(r'payments', PaymentViewSet)
+router.register(r'payments', PaymentViewSet, basename='payment')
 
 urlpatterns = [
     path('', include(router.urls)),

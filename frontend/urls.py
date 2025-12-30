@@ -7,6 +7,7 @@ urlpatterns = [
     path('dashboard/', TemplateView.as_view(template_name='frontend/dashboard.html'), name='dashboard'),
     path('rooms/', TemplateView.as_view(template_name='frontend/rooms.html'), name='rooms'),
     path('bookings/', TemplateView.as_view(template_name='frontend/bookings.html'), name='bookings'),
+    path('billing/', TemplateView.as_view(template_name='frontend/billing.html'), name='billing'),
     path('food/', TemplateView.as_view(template_name='frontend/dining.html'), name='food'),
     path('', TemplateView.as_view(template_name='frontend/login.html'), name='home'),
 ]

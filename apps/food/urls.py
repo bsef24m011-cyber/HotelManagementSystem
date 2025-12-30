@@ -4,7 +4,7 @@ from .views import FoodItemViewSet, FoodOrderViewSet
 
 router = DefaultRouter()
 router.register(r'items', FoodItemViewSet)
-router.register(r'orders', FoodOrderViewSet)
+router.register(r'orders', FoodOrderViewSet, basename='foodorder')
 
 urlpatterns = [
     path('', include(router.urls)),

@@ -1,0 +1,125 @@
+{% extends 'frontend/layouts/base.html' %}
+{% block title %}My Bills - Luxuria{% endblock %}
+{% block page_title %}My Invoices & Payments{% endblock %}
+
+{% block content %}
+<div class="card glass-panel fade-in">
+    <div id="billingList">
+        <div class="loader"></div>
+    </div>
+</div>
+
+<style>
+    .billing-item {
+        padding: 24px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: background 0.3s ease;
+    }
+
+    .billing-item:hover {
+        background: rgba(255, 255, 255, 0.02);
+    }
+
+    .billing-item:last-child {
+        border-bottom: none;
+    }
+
+    .amount {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary);
+    }
+
+    .bill-meta {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        margin-top: 4px;
+    }
+
+    .pay-btn {
+        min-width: 120px;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    async function loadInvoices() {
+        const list = document.getElementById('billingList');
+        try {
+            const res = await fetch('/api/billing/invoices/', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (res.ok) {
+                const invoices = await res.json();
+                list.innerHTML = '';
+
+                if (invoices.length === 0) {
+                    list.innerHTML = '<div style="padding:40px; text-align:center;"><p class="text-muted">No invoices found.</p></div>';
+                    return;
+                }
+
+                invoices.forEach(inv => {
+                    const div = document.createElement('div');
+                    div.className = 'billing-item';
+                    div.innerHTML = `
+                        <div>
+                            <div class="amount">$${inv.amount}</div>
+                            <div class="bill-meta">
+                                Invoice #${inv.id} • Issued on ${inv.issued_date}
+                                <br>
+                                <span class="badge ${inv.status.toLowerCase()}">${inv.status}</span>
+                            </div>
+                        </div>
+                        <div>
+                            ${inv.status === 'UNPAID' ?
+                            `<button class="btn btn-primary pay-btn" onclick="payInvoice(${inv.id}, ${inv.amount})">Pay Now</button>` :
+                            `<button class="btn btn-outline" disabled><i class="ri-checkbox-circle-line"></i> Paid</button>`
+                        }
+                        </div>
+                    `;
+                    list.appendChild(div);
+                });
+            }
+        } catch (e) {
+            list.innerHTML = '<p class="text-danger">Failed to load invoices.</p>';
+        }
+    }
+
+    async function payInvoice(invoiceId, amount) {
+        if (!confirm(`Confirm payment of $${amount}?`)) return;
+
+        try {
+            const res = await fetch('/api/billing/payments/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    invoice: invoiceId,
+                    amount: amount,
+                    payment_method: 'ONLINE',
+                    transaction_id: 'TXN-' + Math.random().toString(36).substr(2, 9).toUpperCase()
+                })
+            });
+
+            if (res.ok) {
+                alert("Payment Successful! Thank you.");
+                loadInvoices();
+            } else {
+                const err = await res.json();
+                alert("Payment Failed: " + JSON.stringify(err));
+            }
+        } catch (e) {
+            alert("Connection error during payment.");
+        }
+    }
+
+    loadInvoices();
+</script>
+{% endblock %}
