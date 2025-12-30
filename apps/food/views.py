@@ -12,9 +12,14 @@ class FoodItemViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAdminUser | ReadOnly]
 
 class FoodOrderViewSet(viewsets.ModelViewSet):
-    queryset = FoodOrder.objects.all()
     serializer_class = FoodOrderSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.role in ['ADMIN', 'STAFF']:
+            return FoodOrder.objects.all()
+        return FoodOrder.objects.filter(booking__user=user)
 
     def perform_create(self, serializer):
         booking = serializer.validated_data['booking']

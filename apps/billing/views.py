@@ -46,9 +46,14 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         return Response(InvoiceSerializer(invoice).data, status=status.HTTP_201_CREATED)
 
 class PaymentViewSet(viewsets.ModelViewSet):
-    queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.role in ['ADMIN', 'STAFF']:
+            return Payment.objects.all()
+        return Payment.objects.filter(invoice__user=user)
 
     def perform_create(self, serializer):
         invoice = serializer.validated_data['invoice']
